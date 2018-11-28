@@ -3,6 +3,8 @@ using System.IO;
 using System.IO.Pipes;
 using System.Threading.Tasks;
 
+using StreamJsonRpc;
+
 namespace namedpipetest
 {
 
@@ -43,13 +45,26 @@ namespace namedpipetest
 	static async Task ClientAsync(string server)
 	{
 	   Console.WriteLine("Running as client, and asynchronously!");
-	   using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous)) {
+	   using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous)) {
 	       await client.ConnectAsync();
-	       Console.WriteLine("Connected, waiting message"); // TODO: maybe should spin up a task?
-	       using (var reader = new StreamReader(client)) {
-	       	     var message = reader.ReadLine();
-		     Console.WriteLine($"Received message: [{message}]");
+	       Console.WriteLine("Connected, sending request"); // TODO: maybe should spin up a task?
+	       var jsonRpc = JsonRpc.Attach(client);
+#if false
+	       try {
+	       	       int sum = await jsonRpc.InvokeAsync<int>("Add", 6, 4);
+		       Console.WriteLine($"6 + 4 = {sum}.");
+	       } catch (Exception ex) {
+	           Console.WriteLine($"There was a problem carrying out the operation: {ex.Message}");
 	       }
+#else
+	       try {
+	       	       string greet = await jsonRpc.InvokeAsync<string>("Greet", "test");
+		       Console.WriteLine($"Received response [{greet}].");
+	       } catch (Exception ex) {
+	           Console.WriteLine($"There was a problem carrying out the operation: {ex.Message}");
+	       }
+#endif
+	       Console.WriteLine("Terminating stream");
 	   }
 	}
 
@@ -77,7 +92,7 @@ namespace namedpipetest
 	  int clientId = 0;
 	  while (true) {
 	      Console.WriteLine("Waiting for client to make a connection");
-	      using(var strm = new NamedPipeServerStream(pipeName, PipeDirection.Out, NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Byte, PipeOptions.Asynchronous)) {
+	      using(var strm = new NamedPipeServerStream(pipeName, PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Byte, PipeOptions.Asynchronous)) {
 	      	// Presumably this doesn't block, it just goes about its business, it's the `await` that makes it block
 		Console.Write("Created pipe, now waiting for connection");		
 		await strm.WaitForConnectionAsync();
@@ -87,6 +102,7 @@ namespace namedpipetest
 	  }
 	}
 
+#if false
 	private static async Task ResponseToRequestAsync(NamedPipeServerStream stream, int clientId)
 	{
 	// Getting this on compile:
@@ -98,6 +114,33 @@ namespace namedpipetest
 	       writer.WriteLine(message);
 	    }
 	    Console.WriteLine($"Connection #{clientId} serviced");
+	}
+#else
+	private static async Task ResponseToRequestAsync(NamedPipeServerStream strm, int clientId)
+	{
+	    Console.WriteLine($"Connection request #{clientId} received, spinning off an async Task to deal with it");
+	    var jsonRpc = JsonRpc.Attach(strm, new Program());
+	    Console.WriteLine($"JSON-RPC listener attached to #{clientId}, waiting for requests...");
+
+
+	    // TODO: FIX this, does the Completion token not work?
+	    while (true) {
+	    }
+	    await jsonRpc.Completion; // is this per-request, or is there a notion of "session"?
+	    Console.WriteLine($"Connection #{clientId} terminated.");
+	}
+#endif
+
+	public int Add(int a, int b)
+	{
+	    Console.WriteLine($"Received request to add {a} and {b}.");
+	    return a+b;
+	}
+
+	public string Greet(string whom)
+	{
+	    Console.WriteLine($"Received request to greet {whom}.");
+	    return $"Hello, world: {whom}!";
 	}
 
     }
