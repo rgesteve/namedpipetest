@@ -16,7 +16,8 @@ namespace namedpipetest
 	  if (args.Length == 1) {
 	     Client(args[0]);
 	  } else {
-  	     Server();
+  	     // Server();
+	     ServerAsync().GetAwaiter().GetResult();
 	  }
           Console.WriteLine("Done!");
 	  Environment.Exit(0);
@@ -57,16 +58,31 @@ namespace namedpipetest
 }
 	}
 
-#if false
 	static async Task ServerAsync()
 	{
 	  int clientId = 0;
 	  while (true) {
 	      Console.WriteLine("Waiting for client to make a connection");
-	      var strm = new NamedPipeServerStream(pipeName, PipeDirection.Out, NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Byte);
-
+	      using(var strm = new NamedPipeServerStream(pipeName, PipeDirection.Out, NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Byte, PipeOptions.Asynchronous)) {
+	      	// Presumably this doesn't block, it just goes about its business, it's the `await` that makes it block
+		Console.Write("Created pipe, now waiting for connection");		
+		await strm.WaitForConnectionAsync();
+		Console.WriteLine("Connected!");
+		Task nowait = ResponseToRequestAsync(strm, ++clientId);
+	      }
 	  }
 	}
-#endif
+
+	private static async Task ResponseToRequestAsync(NamedPipeServerStream stream, int clientId)
+	{
+	    Console.WriteLine($"Connection request #{clientId} received, spinning off an async Task to deal with it");
+	    using (var writer = new StreamWriter(stream)) {
+	       Console.Write("Enter message: ");
+	       var message = Console.ReadLine();
+	       writer.WriteLine(message);
+	    }
+	    Console.WriteLine($"Connection #{clientId} serviced");
+	}
+
     }
 }
