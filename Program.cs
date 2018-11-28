@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.IO.Pipes;
+using System.Threading.Tasks;
 
 namespace namedpipetest
 {
@@ -41,7 +42,9 @@ namespace namedpipetest
 	{
 	   Console.WriteLine("Running as server!");
 	   using (NamedPipeServerStream ps = new NamedPipeServerStream(pipeName,
-								       PipeDirection.Out)) {
+								       PipeDirection.Out,
+								       NamedPipeServerStream.MaxAllowedServerInstances,
+								       PipeTransmissionMode.Byte)) {
 	    Console.Write("Waiting for connection...");
 	    ps.WaitForConnection();
 	    Console.WriteLine("Connected!");
@@ -53,5 +56,17 @@ namespace namedpipetest
 	    }
 }
 	}
+
+#if false
+	static async Task ServerAsync()
+	{
+	  int clientId = 0;
+	  while (true) {
+	      Console.WriteLine("Waiting for client to make a connection");
+	      var strm = new NamedPipeServerStream(pipeName, PipeDirection.Out, NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Byte);
+
+	  }
+	}
+#endif
     }
 }
