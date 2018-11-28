@@ -14,7 +14,8 @@ namespace namedpipetest
         {
 	  // adjust whether to behave as a server or as a client based on command line flags
 	  if (args.Length == 1) {
-	     Client(args[0]);
+	     //Client(args[0]);
+	     ClientAsync(args[0]).GetAwaiter().GetResult();
 	  } else {
   	     // Server();
 	     ServerAsync().GetAwaiter().GetResult();
@@ -36,6 +37,19 @@ namespace namedpipetest
 		       var message = reader.ReadLine();
 		       Console.WriteLine($"Received message: [{message}]");
 		 }
+	   }
+	}
+
+	static async Task ClientAsync(string server)
+	{
+	   Console.WriteLine("Running as client, and asynchronously!");
+	   using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous)) {
+	       await client.ConnectAsync();
+	       Console.WriteLine("Connected, waiting message"); // TODO: maybe should spin up a task?
+	       using (var reader = new StreamReader(client)) {
+	       	     var message = reader.ReadLine();
+		     Console.WriteLine($"Received message: [{message}]");
+	       }
 	   }
 	}
 
@@ -75,6 +89,8 @@ namespace namedpipetest
 
 	private static async Task ResponseToRequestAsync(NamedPipeServerStream stream, int clientId)
 	{
+	// Getting this on compile:
+	// warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread.
 	    Console.WriteLine($"Connection request #{clientId} received, spinning off an async Task to deal with it");
 	    using (var writer = new StreamWriter(stream)) {
 	       Console.Write("Enter message: ");
