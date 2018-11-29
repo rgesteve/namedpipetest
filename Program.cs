@@ -92,13 +92,12 @@ namespace namedpipetest
 	  int clientId = 0;
 	  while (true) {
 	      Console.WriteLine("Waiting for client to make a connection");
-	      using(var strm = new NamedPipeServerStream(pipeName, PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Byte, PipeOptions.Asynchronous)) {
-	      	// Presumably this doesn't block, it just goes about its business, it's the `await` that makes it block
-		Console.Write("Created pipe, now waiting for connection");		
-		await strm.WaitForConnectionAsync();
-		Console.WriteLine("Connected!");
-		Task nowait = ResponseToRequestAsync(strm, ++clientId);
-	      }
+	      var strm = new NamedPipeServerStream(pipeName, PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+	      // Presumably this doesn't block, it just goes about its business, it's the `await` that makes it block
+	      Console.Write("Created pipe, now waiting for connection");		
+	      await strm.WaitForConnectionAsync();
+	      Console.WriteLine("Connected!");
+	      Task nowait = ResponseToRequestAsync(strm, ++clientId);
 	  }
 	}
 
@@ -122,10 +121,6 @@ namespace namedpipetest
 	    var jsonRpc = JsonRpc.Attach(strm, new Program());
 	    Console.WriteLine($"JSON-RPC listener attached to #{clientId}, waiting for requests...");
 
-
-	    // TODO: FIX this, does the Completion token not work?
-	    while (true) {
-	    }
 	    await jsonRpc.Completion; // is this per-request, or is there a notion of "session"?
 	    Console.WriteLine($"Connection #{clientId} terminated.");
 	}
