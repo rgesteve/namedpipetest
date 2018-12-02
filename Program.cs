@@ -101,20 +101,6 @@ namespace namedpipetest
 	  }
 	}
 
-#if false
-	private static async Task ResponseToRequestAsync(NamedPipeServerStream stream, int clientId)
-	{
-	// Getting this on compile:
-	// warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread.
-	    Console.WriteLine($"Connection request #{clientId} received, spinning off an async Task to deal with it");
-	    using (var writer = new StreamWriter(stream)) {
-	       Console.Write("Enter message: ");
-	       var message = Console.ReadLine();
-	       writer.WriteLine(message);
-	    }
-	    Console.WriteLine($"Connection #{clientId} serviced");
-	}
-#else
 	private static async Task ResponseToRequestAsync(NamedPipeServerStream strm, int clientId)
 	{
 	    Console.WriteLine($"Connection request #{clientId} received, spinning off an async Task to deal with it");
@@ -124,7 +110,6 @@ namespace namedpipetest
 	    await jsonRpc.Completion; // is this per-request, or is there a notion of "session"?
 	    Console.WriteLine($"Connection #{clientId} terminated.");
 	}
-#endif
 
 	public int Add(int a, int b)
 	{
