@@ -91,7 +91,7 @@ namespace namedpipetest
 		{
 	  		int clientId = 0;
 	  		while (true) {
-	      		Console.WriteLine("Waiting for client to make a connection");
+	      		Console.WriteLine("Server started");
 	      		var strm = new NamedPipeServerStream(pipeName, PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
 	      		// Presumably this doesn't block, it just goes about its business, it's the `await` that makes it block
 	      		Console.Write("Created pipe, now waiting for connection");		
